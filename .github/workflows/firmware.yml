@@ -1,0 +1,37 @@
+# Compila el firmware para ESP32 en cada cambio, para detectar errores antes de subirlo a la placa.
+name: Compilar firmware
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  ESP32_CORE: "3.3.10"
+  GFX_VERSION: "1.12.6"
+  ESP32_INDEX: https://espressif.github.io/arduino-esp32/package_esp32_index.json
+
+jobs:
+  compilar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Revisar que pagina.h esté al día
+        run: python3 tools/generar_pagina.py --check
+
+      - uses: arduino/setup-arduino-cli@v2
+
+      - uses: actions/cache@v5
+        with:
+          path: ~/.arduino15
+          key: arduino15-esp32-${{ env.ESP32_CORE }}-gfx-${{ env.GFX_VERSION }}
+
+      - name: Instalar core ESP32 y librerías
+        run: |
+          arduino-cli core update-index --additional-urls "$ESP32_INDEX"
+          arduino-cli core install "esp32:esp32@$ESP32_CORE" --additional-urls "$ESP32_INDEX"
+          arduino-cli lib install "Adafruit GFX Library@$GFX_VERSION"
+
+      - name: Compilar
+        run: arduino-cli compile --fqbn esp32:esp32:esp32 --warnings all --additional-urls "$ESP32_INDEX" firmware/mascota_e6

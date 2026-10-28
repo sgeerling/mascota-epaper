@@ -1,0 +1,240 @@
+// Generado desde web/pagina.html con tools/generar_pagina.py. Edita pagina.html, no este archivo.
+#pragma once
+#include <pgmspace.h>
+const char PAGINA_HTML[] PROGMEM = R"pagina(<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mascota Pie de Metro</title>
+<style>
+:root{
+  --bg:#f4f3ee; --card:#ffffff; --ink:#1d1f2b; --muted:#6b6e7d; --line:#e2e1da;
+  --accent:#28368f; --accent-ink:#ffffff; --accent-soft:#e6e9f7; --warn:#a33a2a;
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#15161c; --card:#1f2029; --ink:#ecebe6; --muted:#9a9cab; --line:#30323f;
+    --accent:#8e9cf0; --accent-ink:#14162a; --accent-soft:#2a2e4a; --warn:#f08a74;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:760px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:1.35rem;margin:0}
+h2{font-size:1rem;margin:0 0 12px}
+.sub{color:var(--muted);font-size:.9rem;margin:2px 0 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-top:16px}
+
+.ahora{display:flex;gap:16px;align-items:center}
+.ahora .marco{flex:0 0 auto;width:132px;height:132px;border-radius:10px;background:#fafaf5;
+  border:1px solid var(--line);display:grid;place-items:center;overflow:hidden}
+.ahora img{width:120px;height:120px;image-rendering:pixelated}
+.ahora .nombre{font-size:1.15rem;font-weight:650}
+.estado{color:var(--muted);font-size:.92rem;margin-top:4px}
+.estado.err{color:var(--warn)}
+.punto{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);margin-right:6px;vertical-align:1px}
+.punto.vivo{animation:lat 1s ease-in-out infinite}
+@keyframes lat{50%{opacity:.25}}
+
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--bg);border:1px solid var(--line);
+  border-radius:999px;padding:4px;gap:4px}
+.seg button{border:0;border-radius:999px;padding:10px 12px;font:inherit;font-weight:600;
+  background:transparent;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+
+.fila{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px}
+label{font-weight:600;font-size:.95rem}
+select,input[type=number]{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);
+  border-radius:10px;padding:9px 10px}
+input[type=number]{width:96px}
+.btn{font:inherit;font-weight:600;border:1px solid var(--line);background:var(--card);color:var(--ink);
+  border-radius:10px;padding:9px 14px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.nota{color:var(--muted);font-size:.85rem;margin:10px 0 0}
+[hidden]{display:none!important}
+
+.grilla{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
+.pose{border:2px solid var(--line);border-radius:12px;background:var(--card);padding:6px 6px 8px;cursor:pointer;
+  text-align:center;font:inherit;color:var(--ink);display:flex;flex-direction:column;justify-content:flex-start}
+.pose:hover{border-color:var(--accent)}
+.pose img{width:100%;aspect-ratio:1;image-rendering:pixelated;background:#fafaf5;border-radius:8px;display:block}
+.pose span{display:block;font-size:.8rem;margin-top:5px;line-height:1.25}
+.pose.activa{border-color:var(--accent);background:var(--accent-soft)}
+.pose.enpantalla span::after{content:" ●";color:var(--accent)}
+
+.aviso{position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(20px);opacity:0;
+  background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:.9rem;
+  transition:.25s;pointer-events:none;max-width:calc(100% - 32px)}
+.aviso.ver{opacity:1;transform:translateX(-50%)}
+</style>
+</head>
+<body>
+<main>
+  <h1>Mascota Pie de Metro</h1>
+  <p class="sub">Pantalla e-paper 1.54" · 24 poses</p>
+
+  <section class="card ahora" aria-live="polite">
+    <div class="marco"><img id="imgActual" alt="Pose en pantalla"></div>
+    <div>
+      <div class="nombre" id="nombreActual">Conectando…</div>
+      <div class="estado" id="estado"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Modo</h2>
+    <div class="seg" role="group" aria-label="Modo">
+      <button id="bAleat" aria-pressed="true">Aleatorio</button>
+      <button id="bFija" aria-pressed="false">Pose fija</button>
+    </div>
+
+    <div id="ajAleat">
+      <div class="fila">
+        <label for="selInt">Cambiar cada</label>
+        <select id="selInt">
+          <option value="180">3 minutos</option>
+          <option value="300">5 minutos</option>
+          <option value="600">10 minutos</option>
+          <option value="900">15 minutos</option>
+          <option value="1800">30 minutos</option>
+          <option value="3600">1 hora</option>
+          <option value="7200">2 horas</option>
+          <option value="21600">6 horas</option>
+          <option value="43200">12 horas</option>
+          <option value="86400">24 horas</option>
+          <option value="otro">Otro…</option>
+        </select>
+        <span id="otroBox" hidden>
+          <input type="number" id="minOtro" min="3" max="1440" step="1" aria-label="Minutos"> min
+          <button class="btn" id="bOtro">Guardar</button>
+        </span>
+        <button class="btn" id="bOtra">Mostrar otra ahora</button>
+      </div>
+      <p class="nota">Sale cada pose una vez por ciclo, en orden aleatorio y sin repetir. Mínimo 3 minutos: cada refresco tarda ~27 s y Waveshare recomienda esperar al menos 3 min entre refrescos.</p>
+    </div>
+    <p class="nota" id="ajFija" hidden>Toca una pose para dejarla fija. La pantalla se vuelve a dibujar una vez al día para cuidarla.</p>
+  </section>
+
+  <section class="card">
+    <h2>Poses</h2>
+    <div class="grilla" id="grilla"></div>
+  </section>
+</main>
+<div class="aviso" id="aviso" role="status"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+let st = null, grillaLista = false, cuenta = null;
+// En el ESP32 no existe MASCOTA_DEMO. El sitio de GitHub Pages lo define en demo.js
+// para simular la API en el navegador y usar imágenes PNG pregeneradas.
+const DEMO = window.MASCOTA_DEMO || null;
+const T_REFRESCO = DEMO ? 'unos segundos' : '~30 s';
+const imgPose = i => DEMO ? DEMO.img(i) : `vista.bmp?p=${i}&n=${st.nombres.length}`;
+
+function aviso(t){ const a=$('aviso'); a.textContent=t; a.classList.add('ver');
+  clearTimeout(aviso.t); aviso.t=setTimeout(()=>a.classList.remove('ver'),2600); }
+
+function mmss(s){ s=Math.max(0,s|0); const h=Math.floor(s/3600), m=Math.floor(s%3600/60), x=s%60;
+  return h ? `${h} h ${String(m).padStart(2,'0')} min` : `${m}:${String(x).padStart(2,'0')}`; }
+
+async function api(url, datos){
+  if(DEMO) return DEMO.api(url, datos);
+  const op = datos ? {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+                      body:new URLSearchParams(datos)} : {};
+  const r = await fetch(url, op);
+  if(!r.ok) throw new Error(r.status);
+  return r.json();
+}
+
+function armarGrilla(){
+  const g=$('grilla'); g.innerHTML='';
+  st.nombres.forEach((n,i)=>{
+    const b=document.createElement('button');
+    b.className='pose'; b.dataset.i=i; b.title=n;
+    b.innerHTML=`<img loading="lazy" alt="" src="${imgPose(i)}"><span></span>`;
+    b.querySelector('span').textContent=`${i+1}. ${n}`;
+    b.onclick=()=>elegirPose(i);
+    g.appendChild(b);
+  });
+  grillaLista=true;
+}
+
+function pintar(){
+  if(!st) return;
+  if(!grillaLista) armarGrilla();
+  const aleat = st.modo==='aleatorio';
+  $('bAleat').setAttribute('aria-pressed', aleat);
+  $('bFija').setAttribute('aria-pressed', !aleat);
+  $('ajAleat').hidden=!aleat; $('ajFija').hidden=aleat;
+
+  const sel=$('selInt'), v=String(st.intervalo);
+  if(document.activeElement!==sel && document.activeElement!==$('minOtro')){
+    if([...sel.options].some(o=>o.value===v)){ sel.value=v; $('otroBox').hidden=true; }
+    else { sel.value='otro'; $('otroBox').hidden=false; $('minOtro').value=Math.round(st.intervalo/60); }
+  }
+
+  document.querySelectorAll('.pose').forEach(b=>{
+    const i=+b.dataset.i;
+    b.classList.toggle('activa', !aleat && i===st.pose);
+    b.classList.toggle('enpantalla', i===st.actual);
+  });
+
+  if(st.actual>=0){
+    const src=imgPose(st.actual);
+    if($('imgActual').getAttribute('src')!==src) $('imgActual').src=src;
+    $('nombreActual').textContent=st.nombres[st.actual];
+  } else $('nombreActual').textContent='Preparando…';
+  cuenta = st.proximo;
+  pintarEstado();
+}
+
+function pintarEstado(){
+  const e=$('estado'); e.classList.toggle('err', !!(st&&st.errorPantalla));
+  if(!st) return;
+  if(st.errorPantalla){ e.textContent='La pantalla no responde. Revisa los cables BUSY, PWR, VCC y GND.'; return; }
+  if(st.refrescando){ e.innerHTML='<span class="punto vivo"></span>Actualizando la pantalla ('+T_REFRESCO+')…'; return; }
+  e.innerHTML = st.modo==='aleatorio'
+    ? `<span class="punto"></span>Modo aleatorio · próxima pose en ${mmss(cuenta)}`
+    : `<span class="punto"></span>Pose fija`;
+}
+
+async function enviar(datos, msg){
+  try{ st=await api('api/config', datos); pintar(); if(msg) aviso(msg); }
+  catch(e){ aviso('No se pudo guardar. ¿Sigues conectado a la mascota?'); }
+}
+
+function elegirPose(i){
+  enviar({modo:'fija', pose:i}, `“${st.nombres[i]}” fija · la pantalla cambia en ${T_REFRESCO}`);
+}
+$('bAleat').onclick=()=>{ if(st.modo!=='aleatorio') enviar({modo:'aleatorio'}, 'Modo aleatorio activado'); };
+$('bFija').onclick=()=>{ if(st.modo!=='fija') enviar({modo:'fija', pose: st.actual>=0?st.actual:st.pose}, 'Pose actual fijada'); };
+$('selInt').onchange=e=>{
+  if(e.target.value==='otro'){ $('otroBox').hidden=false; $('minOtro').value=Math.round(st.intervalo/60); $('minOtro').focus(); return; }
+  $('otroBox').hidden=true;
+  enviar({intervalo:e.target.value}, 'Intervalo guardado');
+};
+$('bOtro').onclick=()=>{
+  let m=parseInt($('minOtro').value,10);
+  if(!(m>=3)){ aviso('El mínimo es 3 minutos'); m=3; }
+  m=Math.min(m,1440);
+  enviar({intervalo:m*60}, `Cambiará cada ${m} min`);
+};
+$('bOtra').onclick=async()=>{
+  try{ st=await api('api/otra',{}); pintar(); aviso('Buscando otra pose…'); }
+  catch(e){ aviso('No se pudo conectar'); }
+};
+
+async function actualizar(){
+  try{ st=await api('api/estado'); pintar(); }
+  catch(e){ $('estado').textContent='Sin conexión con la mascota. Reintentando…'; }
+}
+setInterval(actualizar, DEMO ? 1000 : 4000);
+setInterval(()=>{ if(st && !st.refrescando && cuenta>0){ cuenta--; pintarEstado(); } }, 1000);
+actualizar();
+</script>
+</body>
+</html>
+)pagina";
