@@ -19,6 +19,7 @@ Cuando GitHub Pages esté activado, la demo queda en `https://<tu-usuario>.githu
 
 - Datos de [Open-Meteo](https://open-meteo.com/): gratis y sin clave. Muestra hoy y los próximos 6 días.
 - Buscador de ciudad y botón **Mi ubicación**. La última ciudad queda guardada en el navegador.
+- Cada día muestra un ícono del clima (sol, luna, nubes, niebla, llovizna, lluvia, chubascos, nieve, tormenta, granizo) con la máxima y la mínima.
 - La temperatura mínima y máxima de cada día se dibuja como una regla de pie de metro sobre la escala de la semana.
 - Al final está la leyenda de las 24 poses con la condición que activa cada una.
 

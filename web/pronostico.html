@@ -20,6 +20,7 @@
   --yellow: #D9A915;
   --green: #2D7A4D;
   --bezel: #2A2E31;
+  --sol: #F2BE22; --nube: #FFFFFF; --nube-osc: #9CA5AB; --trazo: #2A2E31; --gota: #2F5FD0;
   --f-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
   --f-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
   --f-data: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
@@ -29,9 +30,11 @@
     --paper: #141719; --panel: #1C2023; --screen: #FAFAF5; --ink: #E5E8E1; --muted: #9AA199;
     --line: #343A3C; --tick: #6E766F; --blue: #93A6F2; --red: #F07B71; --yellow: #F0C84A;
     --green: #72C192; --bezel: #0B0D0E; color-scheme: dark;
+    --sol: #F5C53A; --nube: #DCE1E4; --nube-osc: #8C979E; --trazo: #0E1113; --gota: #7FA2FF;
   }
 }
 :root[data-theme="dark"] {
+  --sol: #F5C53A; --nube: #DCE1E4; --nube-osc: #8C979E; --trazo: #0E1113; --gota: #7FA2FF;
   --paper: #141719; --panel: #1C2023; --screen: #FAFAF5; --ink: #E5E8E1; --muted: #9AA199;
   --line: #343A3C; --tick: #6E766F; --blue: #93A6F2; --red: #F07B71; --yellow: #F0C84A;
   --green: #72C192; --bezel: #0B0D0E; color-scheme: dark;
@@ -111,6 +114,7 @@ ul.sugerencias small { color: var(--muted); }
 .temp-grande { display: flex; align-items: flex-start; gap: 18px; flex-wrap: wrap; }
 .temp-grande .t { font-family: var(--f-display); font-weight: 800; font-size: clamp(64px, 12vw, 96px); line-height: .9; letter-spacing: -.03em; }
 .temp-grande .t sup { font-size: .4em; vertical-align: top; position: relative; top: .25em; margin-left: 2px; }
+.temp-grande .icono { width: 84px; height: 84px; flex: none; margin-top: -6px; }
 .temp-grande .cond { display: grid; gap: 2px; padding-top: 6px; }
 .temp-grande .cond b { font-size: 19px; }
 .temp-grande .cond span { color: var(--muted); }
@@ -131,7 +135,7 @@ dl.datos dd small { font-size: 12px; font-weight: 400; color: var(--muted); }
 .semana { display: grid; background: var(--panel); border-radius: 14px; overflow: hidden; }
 .dia {
   display: grid; align-items: center; gap: 6px 16px; padding: 10px 16px;
-  grid-template-columns: 76px 64px minmax(0, 1.25fr) minmax(0, 1.6fr) 58px 72px;
+  grid-template-columns: 76px 64px minmax(0, 1.7fr) minmax(0, 1.4fr) 58px 72px;
   grid-template-areas: "fecha img cond regla lluvia viento";
   border-top: 1px solid var(--line); cursor: pointer; background: none; border-left: 0; border-right: 0; border-bottom: 0;
   text-align: left; width: 100%;
@@ -141,12 +145,17 @@ dl.datos dd small { font-size: 12px; font-weight: 400; color: var(--muted); }
 .dia[aria-current="true"] { background: color-mix(in srgb, var(--blue) 9%, transparent); }
 .dia .fecha { grid-area: fecha; display: grid; line-height: 1.2; }
 .dia .fecha b { font-family: var(--f-display); font-size: 17px; text-transform: capitalize; }
-.dia .fecha span { font-family: var(--f-data); font-size: 12px; color: var(--muted); }
+.dia .fecha span { font-family: var(--f-data); font-size: 12px; color: var(--muted); white-space: nowrap; }
 .dia .mini { grid-area: img; width: 64px; height: 64px; background: var(--screen); border-radius: 6px; border: 1px solid var(--line); overflow: hidden; }
 .dia .mini img { width: 100%; height: 100%; display: block; object-fit: cover; object-position: top; image-rendering: auto; }
-.dia .cond { grid-area: cond; display: grid; min-width: 0; line-height: 1.3; }
-.dia .cond b { font-weight: 700; }
-.dia .cond span { font-size: 13.5px; color: var(--muted); overflow-wrap: anywhere; }
+.dia .cond { grid-area: cond; display: grid; grid-template-columns: 46px auto minmax(0, 1fr); align-items: center; gap: 10px; min-width: 0; line-height: 1.3; }
+.dia .cond .icono { width: 46px; height: 46px; }
+.dia .cond .temps { display: grid; line-height: 1.05; text-align: right; min-width: 2.6em; }
+.dia .cond .temps b { font-family: var(--f-display); font-size: 24px; font-weight: 800; }
+.dia .cond .temps span { font-family: var(--f-data); font-size: 13px; color: var(--muted); }
+.dia .cond .txt { display: grid; min-width: 0; }
+.dia .cond .txt b { font-weight: 700; }
+.dia .cond .txt span { font-size: 13.5px; color: var(--muted); overflow-wrap: anywhere; }
 .dia .lluvia { grid-area: lluvia; text-align: right; }
 .dia .viento { grid-area: viento; text-align: right; }
 .dia .lluvia, .dia .viento { font-family: var(--f-data); font-variant-numeric: tabular-nums; font-size: 14px; display: grid; line-height: 1.2; }
@@ -200,8 +209,8 @@ footer a { color: var(--blue); }
   .hoy-info { width: 100%; }
   dl.datos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dia {
-    grid-template-columns: 64px minmax(0, 1fr) auto;
-    grid-template-areas: "img fecha lluvia" "img cond viento" "regla regla regla";
+    grid-template-columns: 64px minmax(0, 1fr) auto auto;
+    grid-template-areas: "img fecha lluvia viento" "img cond cond cond" "regla regla regla regla";
     padding: 12px;
   }
   .dia .fecha { grid-template-columns: auto auto; justify-content: start; gap: 8px; align-items: baseline; }
@@ -237,6 +246,7 @@ footer a { color: var(--blue); }
       </div>
       <div class="temp-grande">
         <div class="t" id="tAhora">--<sup>°C</sup></div>
+        <svg class="icono" id="iconoHoy" viewBox="0 0 48 48" role="img" aria-label=""></svg>
         <div class="cond">
           <b id="condAhora">—</b>
           <span id="sensacion">&nbsp;</span>
@@ -317,6 +327,73 @@ const WMO = {
   80: "Chubascos débiles", 81: "Chubascos", 82: "Chubascos violentos", 85: "Chubascos de nieve", 86: "Chubascos de nieve intensos",
   95: "Tormenta eléctrica", 96: "Tormenta con granizo", 99: "Tormenta con granizo intenso",
 };
+
+// ===================== Íconos del clima (SVG dibujado aquí, colores del tema) =====================
+const L = 'stroke="var(--trazo)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"';
+const ic = {
+  sol(cx, cy, r) {
+    let rayos = "";
+    for (let k = 0; k < 8; k++) {
+      const a = k * Math.PI / 4, c = Math.cos(a), s = Math.sin(a);
+      rayos += `<line x1="${(cx + c * (r + 3)).toFixed(1)}" y1="${(cy + s * (r + 3)).toFixed(1)}" x2="${(cx + c * (r + 7)).toFixed(1)}" y2="${(cy + s * (r + 7)).toFixed(1)}"/>`;
+    }
+    return `<g stroke="var(--sol)" stroke-width="2.6" stroke-linecap="round">${rayos}</g><circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--sol)" ${L}/>`;
+  },
+  luna(cx, cy, r) {
+    return `<path d="M${cx} ${cy - r}A${r} ${r} 0 1 0 ${cx + r * .95} ${cy + r * .35}A${r * .8} ${r * .8} 0 0 1 ${cx} ${cy - r}Z" fill="var(--sol)" ${L}/>`;
+  },
+  nube(x, y, e, osc) {   // nube de 32x20 en (x,y), escala e
+    return `<path transform="translate(${x} ${y}) scale(${e})" vector-effect="non-scaling-stroke" d="M8 20h17a7 7 0 0 0 1-14 9 9 0 0 0-17-1 7 7 0 0 0-1 15z" fill="var(${osc ? "--nube-osc" : "--nube"})" ${L}/>`;
+  },
+  lluvia(n, fuerte) {
+    let g = "";
+    const xs = n === 2 ? [19, 29] : [15, 23, 31];
+    xs.forEach((x, i) => { const y = 35 + (i % 2) * 3; g += `<line x1="${x}" y1="${y}" x2="${x - 3}" y2="${y + (fuerte ? 9 : 6)}"/>`; });
+    return `<g stroke="var(--gota)" stroke-width="${fuerte ? 2.8 : 2.2}" stroke-linecap="round">${g}</g>`;
+  },
+  llovizna() {
+    return `<g fill="var(--gota)">${[[15, 37], [23, 40], [31, 37], [19, 44], [27, 44]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.6"/>`).join("")}</g>`;
+  },
+  nieve(pts) {
+    return `<g stroke="var(--gota)" stroke-width="1.6" stroke-linecap="round">${pts.map(([x, y]) =>
+      `<line x1="${x - 3}" y1="${y}" x2="${x + 3}" y2="${y}"/><line x1="${x - 1.5}" y1="${y - 2.6}" x2="${x + 1.5}" y2="${y + 2.6}"/><line x1="${x + 1.5}" y1="${y - 2.6}" x2="${x - 1.5}" y2="${y + 2.6}"/>`).join("")}</g>`;
+  },
+  granizo() {
+    return [[16, 39], [26, 42], [33, 38]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="2.2" fill="var(--nube)" ${L}/>`).join("");
+  },
+  rayo() {
+    return `<path d="M25 30l-6 9h5l-3 8 10-11h-5l3-6z" fill="var(--sol)" ${L}/>`;
+  },
+  niebla() {
+    return `<g stroke="var(--nube-osc)" stroke-width="2.4" stroke-linecap="round"><line x1="8" y1="36" x2="36" y2="36"/><line x1="13" y1="41" x2="41" y2="41"/><line x1="9" y1="46" x2="30" y2="46"/></g>`;
+  },
+};
+// Nube grande estándar (ocupa ~ x 6-42, y 10-34)
+const NUBE = (osc) => ic.nube(5, 12, 1.15, osc);
+function iconoClima(code, dia = true) {
+  const astro = (cx, cy, r) => dia ? ic.sol(cx, cy, r) : ic.luna(cx, cy, r);
+  let g;
+  if (code === 0) g = astro(24, 24, 9);
+  else if (code === 1) g = astro(20, 19, 8) + ic.nube(18, 24, .85);
+  else if (code === 2) g = astro(17, 16, 7) + ic.nube(8, 18, 1.1);
+  else if (code === 3) g = ic.nube(14, 8, .8, true) + ic.nube(4, 15, 1.15);
+  else if (code === 45 || code === 48) g = ic.nube(8, 8, 1.05) + ic.niebla();
+  else if (code >= 51 && code <= 55) g = NUBE() + ic.llovizna();
+  else if (code === 56 || code === 57) g = NUBE() + ic.llovizna() + ic.nieve([[37, 42]]);
+  else if (code === 61 || code === 63) g = NUBE() + ic.lluvia(3);
+  else if (code === 65) g = NUBE(true) + ic.lluvia(3, true);
+  else if (code === 66 || code === 67) g = NUBE(true) + ic.lluvia(2) + ic.nieve([[36, 42]]);
+  else if (code >= 71 && code <= 77) g = NUBE() + ic.nieve([[15, 39], [24, 44], [33, 39]]);
+  else if (code >= 80 && code <= 82) g = astro(14, 13, 7) + ic.nube(9, 14, 1.05, code === 82) + ic.lluvia(code === 80 ? 2 : 3, code === 82);
+  else if (code === 85 || code === 86) g = astro(14, 13, 7) + ic.nube(9, 14, 1.05) + ic.nieve([[17, 41], [28, 41]]);
+  else if (code >= 95) g = NUBE(true) + ic.rayo() + (code >= 96 ? ic.granizo() : "");
+  else g = NUBE();
+  return g;
+}
+function ponerIcono(svg, code, dia) {
+  svg.innerHTML = iconoClima(code, dia);
+  svg.setAttribute("aria-label", WMO[code] ?? "");
+}
 
 // ===================== Reglas: qué pose corresponde a cada día =====================
 // d: {code, tmax, tmin, pprob, psum, wind, uv, fecha}; ayer: el día anterior o null.
@@ -449,11 +526,13 @@ function pintarDetalle() {
   if (esHoy && actual) {
     $("tAhora").innerHTML = `${r0(actual.temperature_2m)}<sup>°C</sup>`;
     $("condAhora").textContent = WMO[actual.weather_code] ?? "—";
+    ponerIcono($("iconoHoy"), actual.weather_code, actual.is_day === 1);
     $("sensacion").textContent = `Sensación térmica ${r0(actual.apparent_temperature)} °C`;
     $("dHum").innerHTML = `${r0(actual.relative_humidity_2m)}<small> %</small>`;
   } else {
     $("tAhora").innerHTML = `${r0(d.tmax)}<sup>°C</sup>`;
     $("condAhora").textContent = WMO[d.code] ?? "—";
+    ponerIcono($("iconoHoy"), d.code, true);
     $("sensacion").textContent = "Temperatura máxima del día";
     $("dHum").innerHTML = `--`;
   }
@@ -486,7 +565,11 @@ function pintarSemana() {
     b.innerHTML = `
       <span class="fecha"><b></b><span></span></span>
       <span class="mini"><img loading="lazy" width="64" height="64" alt=""></span>
-      <span class="cond"><b></b><span></span></span>
+      <span class="cond">
+        <svg class="icono" viewBox="0 0 48 48" role="img"></svg>
+        <span class="temps"><b class="num">${r0(d.tmax)}°</b><span>${r0(d.tmin)}°</span></span>
+        <span class="txt"><b></b><span></span></span>
+      </span>
       <span class="regla" aria-label="Mínima ${r0(d.tmin)} grados, máxima ${r0(d.tmax)} grados">
         <span class="tmin">${r0(d.tmin)}°</span>
         <span class="escala" style="--ticks:${ticks}"><span class="jaw" style="left:${izq}%;width:${ancho}%"></span></span>
@@ -497,8 +580,9 @@ function pintarSemana() {
     b.querySelector(".fecha b").textContent = nombreDia;
     b.querySelector(".fecha span").textContent = fmtFecha.format(d.fecha);
     const im = b.querySelector(".mini img"); im.src = imgPose(d.pose); im.alt = `Pose: ${P.nombre}`;
-    b.querySelector(".cond b").textContent = WMO[d.code] ?? "—";
-    b.querySelector(".cond span").textContent = P.nombre;
+    ponerIcono(b.querySelector(".cond .icono"), d.code, true);
+    b.querySelector(".cond .txt b").textContent = WMO[d.code] ?? "—";
+    b.querySelector(".cond .txt span").textContent = P.nombre;
     b.addEventListener("click", () => { diaSel = i; pintarDetalle(); window.scrollTo({ top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); });
     cont.append(b);
   });
