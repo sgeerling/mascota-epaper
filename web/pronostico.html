@@ -1,0 +1,614 @@
+<title>Pronóstico Pie de Metro</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Pronóstico del tiempo diario con la mascota Pie de Metro: cada día muestra la pose que corresponde al clima.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: una "pantalla e-paper" grande con el día de hoy, luego la semana como filas
+   con una regla de pie de metro (mín–máx), y al final la leyenda de las 24 poses. */
+:root {
+  --paper: #E8EAE3;      /* fondo, papel con tinte verde grisáceo */
+  --panel: #F6F7F2;      /* superficies */
+  --screen: #FAFAF5;     /* fondo del panel e-paper (igual al PNG de las poses) */
+  --ink: #1D2023;
+  --muted: #5B635D;
+  --line: #C8CCC1;
+  --tick: #8D948B;
+  --blue: #2B419C;       /* azul Spectra, el de los brazos de la mascota */
+  --red: #B3302B;
+  --yellow: #D9A915;
+  --green: #2D7A4D;
+  --bezel: #2A2E31;
+  --f-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-data: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #141719; --panel: #1C2023; --screen: #FAFAF5; --ink: #E5E8E1; --muted: #9AA199;
+    --line: #343A3C; --tick: #6E766F; --blue: #93A6F2; --red: #F07B71; --yellow: #F0C84A;
+    --green: #72C192; --bezel: #0B0D0E; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #141719; --panel: #1C2023; --screen: #FAFAF5; --ink: #E5E8E1; --muted: #9AA199;
+  --line: #343A3C; --tick: #6E766F; --blue: #93A6F2; --red: #F07B71; --yellow: #F0C84A;
+  --green: #72C192; --bezel: #0B0D0E; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--paper); color: var(--ink);
+  font-family: var(--f-body); font-size: 16px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 48px;
+}
+main { max-width: 980px; margin: 0 auto; display: grid; gap: 28px; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; line-height: 1.1; }
+.num { font-family: var(--f-data); font-variant-numeric: tabular-nums; }
+.label { font-family: var(--f-data); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+button, input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 4px; }
+
+/* ---------- Encabezado ---------- */
+header.top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 14px 24px; }
+.marca { display: grid; gap: 2px; }
+.marca h1 { font-size: clamp(26px, 5vw, 36px); font-weight: 800; letter-spacing: -.01em; }
+.marca p { margin: 0; color: var(--muted); font-size: 15px; }
+form.buscar { display: flex; gap: 8px; flex-wrap: wrap; position: relative; min-width: 0; }
+.campo { position: relative; flex: 1 1 220px; min-width: 0; }
+.campo input {
+  width: 100%; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 8px;
+  background: var(--panel);
+}
+.campo input:focus { border-color: var(--blue); outline: none; }
+.btn {
+  padding: 10px 14px; border-radius: 8px; border: 1.5px solid var(--ink); background: var(--ink);
+  color: var(--paper); font-weight: 700; cursor: pointer; white-space: nowrap;
+}
+.btn.sec { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn:hover { filter: brightness(1.12); }
+.btn.sec:hover { border-color: var(--ink); filter: none; }
+ul.sugerencias {
+  position: absolute; z-index: 5; top: calc(100% + 4px); left: 0; right: 0; margin: 0; padding: 4px;
+  list-style: none; background: var(--panel); border: 1.5px solid var(--line); border-radius: 8px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / .14);
+}
+ul.sugerencias button {
+  width: 100%; text-align: left; padding: 8px 10px; border: 0; background: none; border-radius: 6px; cursor: pointer;
+}
+ul.sugerencias button:hover, ul.sugerencias button:focus-visible { background: var(--paper); }
+ul.sugerencias small { color: var(--muted); }
+
+.aviso {
+  border: 1.5px dashed var(--line); border-radius: 10px; padding: 10px 14px; color: var(--muted); font-size: 14.5px;
+  background: var(--panel);
+}
+.aviso strong { color: var(--ink); }
+.aviso a { color: var(--blue); }
+
+/* ---------- Hoy ---------- */
+.hoy { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 28px; align-items: center; }
+.epaper {
+  background: var(--bezel); border-radius: 18px; padding: 16px 16px 30px; position: relative;
+  box-shadow: 0 1px 0 rgb(255 255 255 / .06) inset, 0 10px 30px rgb(0 0 0 / .18);
+  max-width: 100%;
+}
+.epaper::after {   /* serigrafía del módulo */
+  content: "1.54\" e-Paper (E) · 240×240"; position: absolute; left: 0; right: 0; bottom: 9px; text-align: center;
+  font-family: var(--f-data); font-size: 10px; letter-spacing: .08em; color: #8C9295;
+}
+.epaper img {
+  display: block; width: 100%; aspect-ratio: 1; background: var(--screen); border-radius: 3px;
+  image-rendering: pixelated; transition: opacity .35s ease;
+}
+.epaper img.cambiando { opacity: .15; }
+.hoy-info { display: grid; gap: 16px; min-width: 0; }
+.hoy-info .lugar { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
+.hoy-info .lugar h2 { font-size: clamp(22px, 4vw, 28px); font-weight: 700; }
+.temp-grande { display: flex; align-items: flex-start; gap: 18px; flex-wrap: wrap; }
+.temp-grande .t { font-family: var(--f-display); font-weight: 800; font-size: clamp(64px, 12vw, 96px); line-height: .9; letter-spacing: -.03em; }
+.temp-grande .t sup { font-size: .4em; vertical-align: top; position: relative; top: .25em; margin-left: 2px; }
+.temp-grande .cond { display: grid; gap: 2px; padding-top: 6px; }
+.temp-grande .cond b { font-size: 19px; }
+.temp-grande .cond span { color: var(--muted); }
+.mensaje {
+  margin: 0; padding: 12px 16px; border-left: 3px solid var(--blue); background: var(--panel); border-radius: 0 8px 8px 0;
+  font-size: 17px; max-width: 60ch;
+}
+.mensaje .pose { display: block; font-family: var(--f-data); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--blue); margin-bottom: 2px; }
+dl.datos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 0; }
+dl.datos div { background: var(--panel); border-radius: 8px; padding: 10px 12px; display: grid; gap: 2px; min-width: 0; }
+dl.datos dt { font-family: var(--f-data); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+dl.datos dd { margin: 0; font-family: var(--f-data); font-variant-numeric: tabular-nums; font-size: 18px; font-weight: 600; }
+dl.datos dd small { font-size: 12px; font-weight: 400; color: var(--muted); }
+
+/* ---------- Semana ---------- */
+.seccion-tit { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 16px; margin-bottom: 10px; }
+.seccion-tit h2 { font-size: 22px; font-weight: 700; }
+.semana { display: grid; background: var(--panel); border-radius: 14px; overflow: hidden; }
+.dia {
+  display: grid; align-items: center; gap: 6px 16px; padding: 10px 16px;
+  grid-template-columns: 76px 64px minmax(0, 1.25fr) minmax(0, 1.6fr) 58px 72px;
+  grid-template-areas: "fecha img cond regla lluvia viento";
+  border-top: 1px solid var(--line); cursor: pointer; background: none; border-left: 0; border-right: 0; border-bottom: 0;
+  text-align: left; width: 100%;
+}
+.dia:first-child { border-top: 0; }
+.dia:hover { background: color-mix(in srgb, var(--paper) 55%, transparent); }
+.dia[aria-current="true"] { background: color-mix(in srgb, var(--blue) 9%, transparent); }
+.dia .fecha { grid-area: fecha; display: grid; line-height: 1.2; }
+.dia .fecha b { font-family: var(--f-display); font-size: 17px; text-transform: capitalize; }
+.dia .fecha span { font-family: var(--f-data); font-size: 12px; color: var(--muted); }
+.dia .mini { grid-area: img; width: 64px; height: 64px; background: var(--screen); border-radius: 6px; border: 1px solid var(--line); overflow: hidden; }
+.dia .mini img { width: 100%; height: 100%; display: block; object-fit: cover; object-position: top; image-rendering: auto; }
+.dia .cond { grid-area: cond; display: grid; min-width: 0; line-height: 1.3; }
+.dia .cond b { font-weight: 700; }
+.dia .cond span { font-size: 13.5px; color: var(--muted); overflow-wrap: anywhere; }
+.dia .lluvia { grid-area: lluvia; text-align: right; }
+.dia .viento { grid-area: viento; text-align: right; }
+.dia .lluvia, .dia .viento { font-family: var(--f-data); font-variant-numeric: tabular-nums; font-size: 14px; display: grid; line-height: 1.2; }
+.dia .lluvia small, .dia .viento small { font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.dia .lluvia.alta { color: var(--blue); font-weight: 600; }
+
+/* Regla de pie de metro: la corredera marca mínima y máxima del día sobre la escala de la semana */
+.regla { grid-area: regla; display: grid; grid-template-columns: 34px minmax(0, 1fr) 34px; align-items: center; gap: 6px; min-width: 0; }
+.regla .tmin, .regla .tmax { font-family: var(--f-data); font-variant-numeric: tabular-nums; font-size: 14px; }
+.regla .tmin { text-align: right; color: var(--muted); }
+.regla .tmax { font-weight: 600; }
+.escala { position: relative; height: 22px; }
+.escala::before {   /* la regla con su graduación (1 marca = 1 °C) */
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 22px;
+  background:
+    linear-gradient(var(--tick), var(--tick)) left 0 bottom 0 / 100% 1px no-repeat,
+    var(--ticks);
+  opacity: .9;
+}
+.escala .jaw {
+  position: absolute; top: 3px; height: 13px; border-radius: 3px;
+  background: linear-gradient(90deg, var(--blue), color-mix(in srgb, var(--blue) 30%, var(--red)) 55%, var(--red));
+}
+.escala .jaw::before, .escala .jaw::after {  /* las mandíbulas */
+  content: ""; position: absolute; top: -3px; width: 3px; height: 22px; background: var(--ink); border-radius: 1px;
+}
+.escala .jaw::before { left: -1px; }
+.escala .jaw::after { right: -1px; }
+
+/* ---------- Leyenda de poses ---------- */
+.poses { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.pose-item {
+  display: grid; grid-template-rows: auto auto; gap: 8px; padding: 10px; border-radius: 10px; text-align: left;
+  background: var(--panel); border: 1.5px solid transparent; cursor: pointer;
+}
+.pose-item:hover { border-color: var(--line); }
+.pose-item.usada { border-color: var(--blue); }
+.pose-item .img { background: var(--screen); border-radius: 6px; aspect-ratio: 1; overflow: hidden; }
+.pose-item img { width: 100%; height: 100%; display: block; }
+.pose-item b { display: block; font-family: var(--f-display); font-size: 15px; line-height: 1.2; }
+.pose-item span { display: block; font-size: 13px; color: var(--muted); line-height: 1.35; margin-top: 2px; }
+.pose-item .n { font-family: var(--f-data); font-size: 11px; color: var(--muted); }
+.pose-item.usada .n { color: var(--blue); font-weight: 600; }
+
+footer { color: var(--muted); font-size: 13.5px; display: grid; gap: 4px; }
+footer a { color: var(--blue); }
+
+@media (max-width: 760px) {
+  .hoy { grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 18px; }
+  .epaper { width: min(280px, 100%); }
+  .hoy-info { width: 100%; }
+  dl.datos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dia {
+    grid-template-columns: 64px minmax(0, 1fr) auto;
+    grid-template-areas: "img fecha lluvia" "img cond viento" "regla regla regla";
+    padding: 12px;
+  }
+  .dia .fecha { grid-template-columns: auto auto; justify-content: start; gap: 8px; align-items: baseline; }
+}
+@media (prefers-reduced-motion: reduce) { .epaper img { transition: none; } }
+</style>
+
+<main>
+  <header class="top">
+    <div class="marca">
+      <h1>Pronóstico Pie de Metro</h1>
+      <p>El tiempo de cada día, medido por la mascota.</p>
+    </div>
+    <form class="buscar" id="formBuscar" autocomplete="off">
+      <div class="campo">
+        <label class="label" for="ciudad" hidden>Ciudad</label>
+        <input id="ciudad" type="search" placeholder="Buscar ciudad…" aria-label="Buscar ciudad" aria-autocomplete="list" aria-controls="sugerencias">
+        <ul class="sugerencias" id="sugerencias" hidden></ul>
+      </div>
+      <button class="btn" type="submit" id="bBuscar">Buscar</button>
+      <button class="btn sec" type="button" id="bUbicacion">Mi ubicación</button>
+    </form>
+  </header>
+
+  <div class="aviso" id="aviso" hidden></div>
+
+  <section class="hoy" aria-labelledby="lugar">
+    <div class="epaper"><img id="imgHoy" src="poses/01.png" alt="Mascota Pie de Metro" width="240" height="240"></div>
+    <div class="hoy-info">
+      <div class="lugar">
+        <h2 id="lugar">Santiago</h2>
+        <span class="label" id="fechaHoy">Cargando…</span>
+      </div>
+      <div class="temp-grande">
+        <div class="t" id="tAhora">--<sup>°C</sup></div>
+        <div class="cond">
+          <b id="condAhora">—</b>
+          <span id="sensacion">&nbsp;</span>
+          <span class="num" id="rangoHoy">&nbsp;</span>
+        </div>
+      </div>
+      <p class="mensaje"><span class="pose" id="poseHoy">Pose</span><span id="msgHoy">Consultando el pronóstico…</span></p>
+      <dl class="datos">
+        <div><dt>Lluvia</dt><dd id="dLluvia">--</dd></div>
+        <div><dt>Viento</dt><dd id="dViento">--</dd></div>
+        <div><dt>Índice UV</dt><dd id="dUv">--</dd></div>
+        <div><dt>Humedad</dt><dd id="dHum">--</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section aria-labelledby="titSemana">
+    <div class="seccion-tit">
+      <h2 id="titSemana">Próximos 7 días</h2>
+      <span class="label" id="escalaTxt">Regla: mínima y máxima del día</span>
+    </div>
+    <div class="semana" id="semana" role="list"></div>
+  </section>
+
+  <section aria-labelledby="titPoses">
+    <div class="seccion-tit">
+      <h2 id="titPoses">Las 24 poses y cuándo aparecen</h2>
+      <span class="label">En azul: las que salen esta semana</span>
+    </div>
+    <div class="poses" id="poses"></div>
+  </section>
+
+  <footer>
+    <span>Datos del tiempo: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> (código de tiempo de la OMM). Hora local de la ciudad elegida.</span>
+    <span>Mascota y firmware: <a href="https://github.com/sgeerling/mascota-epaper" target="_blank" rel="noopener">github.com/sgeerling/mascota-epaper</a></span>
+  </footer>
+</main>
+
+<script>
+// ===================== Poses (mismo orden que firmware/mascota_e6/poses.h) =====================
+// cuando: condición que la activa · msg: lo que dice la mascota ese día
+const POSES = [
+  null,
+  { nombre: "Normal",              cuando: "Parcialmente nublado, sin nada especial",          msg: "Día tranquilo, unas nubes de paso. Nada que medir." },
+  { nombre: "Saludando",           cuando: "Hoy, en la mañana y sin alertas",                  msg: "¡Buenos días! Así viene el tiempo para hoy." },
+  { nombre: "Mira a la izquierda", cuando: "Viento moderado (30–49 km/h)",                     msg: "Corre viento: abrígate el cuello y sujeta lo que vuele." },
+  { nombre: "Guiño",               cuando: "Mayormente despejado",                             msg: "Casi sin nubes. Buen día para salir." },
+  { nombre: "Midiendo",            cuando: "Gran diferencia entre mínima y máxima (≥ 18 °C)",  msg: "Mañana fría y tarde calurosa: vístete por capas." },
+  { nombre: "Sorpresa",            cuando: "Nieve",                                            msg: "¡Nieve! Cuidado con el hielo en el camino." },
+  { nombre: "Mira a la derecha",   cuando: "La máxima cambia 7 °C o más respecto al día anterior", msg: "Cambio brusco de temperatura respecto a ayer." },
+  { nombre: "Durmiendo",           cuando: "Hoy, de noche",                                    msg: "Ya es de noche. Así viene mañana: revisa la semana abajo." },
+  { nombre: "Enamorado",           cuando: "Día perfecto entre semana: despejado, 20–27 °C, poco viento", msg: "Día perfecto. Aprovecha de salir aunque sea un rato." },
+  { nombre: "Enojado",             cuando: "Helada (mínima ≤ 0 °C) o lluvia congelante",       msg: "Helada: protege las plantas y sal con cuidado temprano." },
+  { nombre: "Triste",              cuando: "Lluvia intensa (≥ 20 mm o chaparrón fuerte)",      msg: "Lluvia fuerte todo el día. Mejor quedarse adentro." },
+  { nombre: "Confundido",          cuando: "Niebla",                                           msg: "Niebla espesa: maneja con luces encendidas." },
+  { nombre: "Cantando",            cuando: "Fin de semana con buen tiempo",                    msg: "Fin de semana sin lluvia. ¡A disfrutar!" },
+  { nombre: "Celebrando",          cuando: "Fin de semana perfecto",                           msg: "Fin de semana perfecto. ¡Hay que celebrarlo afuera!" },
+  { nombre: "Nervioso",            cuando: "Calor extremo (máxima ≥ 32 °C)",                   msg: "Mucho calor: toma agua y busca sombra al mediodía." },
+  { nombre: "¡Idea!",              cuando: "Probabilidad de lluvia entre 30 y 59 %",           msg: "Puede que llueva: lleva paraguas, por si acaso." },
+  { nombre: "Con onda",            cuando: "Despejado con índice UV muy alto (≥ 8)",           msg: "Sol fuerte: lentes de sol y bloqueador." },
+  { nombre: "Mareado",             cuando: "Viento fuerte (≥ 50 km/h)",                        msg: "Viento fuerte. Asegura toldos, macetas y ventanas." },
+  { nombre: "Midiendo una tuerca", cuando: "Cielo cubierto",                                   msg: "Día gris: ideal para proyectos en el taller." },
+  { nombre: "¡Alerta!",            cuando: "Tormenta eléctrica",                               msg: "Tormenta eléctrica: evita espacios abiertos." },
+  { nombre: "Pausa para café",     cuando: "Frío (máxima bajo 12 °C)",                         msg: "Día frío. Buen momento para un café caliente." },
+  { nombre: "Día soleado",         cuando: "Despejado",                                        msg: "Cielo despejado todo el día." },
+  { nombre: "Día lluvioso",        cuando: "Lluvia o llovizna",                                msg: "Día de lluvia: paraguas y zapatos que no se mojen." },
+  { nombre: "Arcoíris",            cuando: "Chubascos con sol, o primer día seco después de lluvia", msg: "Sol después de la lluvia: mira al cielo, puede salir un arcoíris." },
+];
+const imgPose = n => `poses/${String(n).padStart(2, "0")}.png`;
+
+// Códigos de tiempo de la OMM (WMO) que entrega Open-Meteo
+const WMO = {
+  0: "Despejado", 1: "Mayormente despejado", 2: "Parcialmente nublado", 3: "Nublado",
+  45: "Niebla", 48: "Niebla con escarcha",
+  51: "Llovizna débil", 53: "Llovizna", 55: "Llovizna intensa", 56: "Llovizna helada", 57: "Llovizna helada intensa",
+  61: "Lluvia débil", 63: "Lluvia", 65: "Lluvia intensa", 66: "Lluvia helada", 67: "Lluvia helada intensa",
+  71: "Nevada débil", 73: "Nevada", 75: "Nevada intensa", 77: "Granizo fino",
+  80: "Chubascos débiles", 81: "Chubascos", 82: "Chubascos violentos", 85: "Chubascos de nieve", 86: "Chubascos de nieve intensos",
+  95: "Tormenta eléctrica", 96: "Tormenta con granizo", 99: "Tormenta con granizo intenso",
+};
+
+// ===================== Reglas: qué pose corresponde a cada día =====================
+// d: {code, tmax, tmin, pprob, psum, wind, uv, fecha}; ayer: el día anterior o null.
+// Se evalúan en orden: la primera que se cumple gana (lo más importante primero).
+function poseDelDia(d, ayer) {
+  const c = d.code;
+  const finde = [0, 6].includes(d.fecha.getDay());
+  const seco = d.psum < 0.5 && d.pprob < 30;
+  if (c >= 95) return 20;                                                    // tormenta
+  if ((c >= 71 && c <= 77) || c === 85 || c === 86) return 6;                // nieve
+  if ([56, 57, 66, 67].includes(c) || d.tmin <= 0) return 10;                // helada
+  if (d.wind >= 50) return 18;                                               // viento fuerte
+  if (c === 65 || c === 82 || d.psum >= 20) return 11;                       // lluvia intensa
+  if (c === 45 || c === 48) return 12;                                       // niebla
+  if (c === 80 || (ayer && ayer.psum >= 1 && c <= 2 && seco)) return 24;     // arcoíris
+  if ((c >= 51 && c <= 63) || c === 81) return 23;                           // lluvia o llovizna
+  if (d.tmax >= 32) return 15;                                               // calor extremo
+  if (d.tmax < 12) return 21;                                                // frío
+  if (d.wind >= 30) return 3;                                                // viento moderado
+  if (d.pprob >= 30) return 16;                                              // quizás llueva
+  if (ayer && Math.abs(d.tmax - ayer.tmax) >= 7) return 7;                   // cambio brusco
+  if (d.tmax - d.tmin >= 18) return 5;                                       // gran amplitud térmica
+  const perfecto = c <= 1 && d.tmax >= 20 && d.tmax <= 27 && d.wind < 20 && d.pprob < 20;
+  if (perfecto) return finde ? 14 : 9;                                       // día perfecto
+  if (finde && c <= 2 && d.tmax >= 15 && seco) return 13;                    // buen fin de semana
+  if (c === 0 && d.uv >= 8) return 17;                                       // sol fuerte
+  if (c === 0) return 22;                                                    // despejado
+  if (c === 1) return 4;                                                     // mayormente despejado
+  if (c === 3) return 19;                                                    // nublado
+  return 1;                                                                  // parcialmente nublado / otro
+}
+
+// La pantalla grande de "hoy": noche y mañana tienen su pose, salvo que el día traiga algo serio.
+const SERIAS = [20, 10, 6, 18, 11];
+function poseDeAhora(poseHoy, hora, esDeDia) {
+  if (SERIAS.includes(poseHoy)) return poseHoy;
+  if (!esDeDia) return 8;
+  if (hora >= 6 && hora < 11) return 2;
+  return poseHoy;
+}
+
+// ===================== Datos =====================
+const API = "https://api.open-meteo.com/v1/forecast";
+const GEO = "https://geocoding-api.open-meteo.com/v1/search";
+const DIARIO = "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,wind_speed_10m_max,uv_index_max";
+const ACTUAL = "temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,is_day,wind_speed_10m";
+const DEFECTO = { nombre: "Santiago", detalle: "Región Metropolitana, Chile", lat: -33.4489, lon: -70.6693 };
+
+async function pedirPronostico(lugar) {
+  const u = `${API}?latitude=${lugar.lat}&longitude=${lugar.lon}&daily=${DIARIO}&current=${ACTUAL}` +
+            `&timezone=auto&past_days=1&forecast_days=7&wind_speed_unit=kmh`;
+  const r = await fetch(u);
+  if (!r.ok) throw new Error(`Open-Meteo respondió ${r.status}`);
+  return r.json();
+}
+
+// Semana de ejemplo para cuando no hay conexión con Open-Meteo (vista previa sin red).
+function ejemplo() {
+  const hoy = new Date(); hoy.setHours(12, 0, 0, 0);
+  const dias = [
+    [61, 14, 7, 80, 6.2, 18, 3], [1, 21, 6, 5, 0, 12, 8], [0, 27, 8, 0, 0, 14, 10], [3, 19, 11, 20, 0, 16, 4],
+    [2, 18, 10, 45, 0.4, 22, 6], [0, 24, 9, 0, 0, 15, 9], [0, 33, 15, 0, 0, 18, 11], [63, 16, 9, 85, 8.4, 24, 3],
+  ];
+  const f = i => { const x = new Date(hoy); x.setDate(x.getDate() + i - 1); return x.toISOString().slice(0, 10); };
+  return {
+    ejemplo: true,
+    current: { time: `${f(1)}T15:00`, temperature_2m: 25.4, apparent_temperature: 24.6, relative_humidity_2m: 38,
+               weather_code: 1, is_day: 1, wind_speed_10m: 11 },
+    daily: {
+      time: dias.map((_, i) => f(i)),
+      weather_code: dias.map(d => d[0]), temperature_2m_max: dias.map(d => d[1]), temperature_2m_min: dias.map(d => d[2]),
+      precipitation_probability_max: dias.map(d => d[3]), precipitation_sum: dias.map(d => d[4]),
+      wind_speed_10m_max: dias.map(d => d[5]), uv_index_max: dias.map(d => d[6]),
+    },
+  };
+}
+
+function normalizar(j) {
+  const D = j.daily, n = D.time.length;
+  const dias = [];
+  for (let i = 0; i < n; i++) {
+    const [y, m, dd] = D.time[i].split("-").map(Number);
+    dias.push({
+      iso: D.time[i], fecha: new Date(y, m - 1, dd, 12),
+      code: D.weather_code[i] ?? 2,
+      tmax: D.temperature_2m_max[i], tmin: D.temperature_2m_min[i],
+      pprob: D.precipitation_probability_max?.[i] ?? 0, psum: D.precipitation_sum?.[i] ?? 0,
+      wind: D.wind_speed_10m_max?.[i] ?? 0, uv: D.uv_index_max?.[i] ?? 0,
+    });
+  }
+  // past_days=1: el primer día es ayer; solo sirve de referencia para las reglas.
+  const hoyIso = (j.current?.time || "").slice(0, 10);
+  let k = dias.findIndex(d => d.iso === hoyIso);
+  if (k < 0) k = Math.min(1, n - 1);
+  for (let i = k; i < n; i++) dias[i].pose = poseDelDia(dias[i], i > 0 ? dias[i - 1] : null);
+  return { dias: dias.slice(k), actual: j.current, ejemplo: !!j.ejemplo };
+}
+
+// ===================== Interfaz =====================
+const $ = id => document.getElementById(id);
+const fmtDia = new Intl.DateTimeFormat("es-CL", { weekday: "long" });
+const fmtFecha = new Intl.DateTimeFormat("es-CL", { day: "numeric", month: "short" });
+const fmtLarga = new Intl.DateTimeFormat("es-CL", { weekday: "long", day: "numeric", month: "long" });
+const r0 = x => (x == null || Number.isNaN(x)) ? "--" : Math.round(x);
+let estado = null, lugarActual = DEFECTO, diaSel = 0;
+
+function nivelUv(uv) {
+  if (uv >= 11) return "extremo"; if (uv >= 8) return "muy alto"; if (uv >= 6) return "alto";
+  if (uv >= 3) return "moderado"; return "bajo";
+}
+
+function cambiarImg(img, src, alt) {
+  if (img.getAttribute("src") === src) { img.alt = alt; return; }
+  img.classList.add("cambiando");
+  setTimeout(() => { img.src = src; img.alt = alt; img.classList.remove("cambiando"); }, 180);
+}
+
+function pintarDetalle() {
+  const { dias, actual } = estado;
+  const d = dias[diaSel];
+  const esHoy = diaSel === 0;
+  let pose = d.pose;
+  if (esHoy && actual) {
+    const hora = parseInt((actual.time || "T12").split("T")[1], 10);
+    pose = poseDeAhora(d.pose, hora, actual.is_day === 1);
+  }
+  const P = POSES[pose];
+  cambiarImg($("imgHoy"), imgPose(pose), `Mascota: ${P.nombre}`);
+  $("fechaHoy").textContent = esHoy ? `Hoy · ${fmtLarga.format(d.fecha)}` : fmtLarga.format(d.fecha);
+  if (esHoy && actual) {
+    $("tAhora").innerHTML = `${r0(actual.temperature_2m)}<sup>°C</sup>`;
+    $("condAhora").textContent = WMO[actual.weather_code] ?? "—";
+    $("sensacion").textContent = `Sensación térmica ${r0(actual.apparent_temperature)} °C`;
+    $("dHum").innerHTML = `${r0(actual.relative_humidity_2m)}<small> %</small>`;
+  } else {
+    $("tAhora").innerHTML = `${r0(d.tmax)}<sup>°C</sup>`;
+    $("condAhora").textContent = WMO[d.code] ?? "—";
+    $("sensacion").textContent = "Temperatura máxima del día";
+    $("dHum").innerHTML = `--`;
+  }
+  $("rangoHoy").textContent = `Mín ${r0(d.tmin)}° · Máx ${r0(d.tmax)}°`;
+  $("poseHoy").textContent = `Pose ${pose} · ${P.nombre}`;
+  $("msgHoy").textContent = P.msg;
+  $("dLluvia").innerHTML = `${r0(d.pprob)}<small> %</small>${d.psum >= 0.1 ? ` <small>${d.psum.toFixed(1)} mm</small>` : ""}`;
+  $("dViento").innerHTML = `${r0(esHoy && actual ? actual.wind_speed_10m : d.wind)}<small> km/h</small>`;
+  $("dUv").innerHTML = `${r0(d.uv)} <small>${nivelUv(d.uv)}</small>`;
+  document.querySelectorAll(".dia").forEach((b, i) => b.setAttribute("aria-current", i === diaSel ? "true" : "false"));
+}
+
+function pintarSemana() {
+  const { dias } = estado;
+  const lo = Math.floor(Math.min(...dias.map(d => d.tmin)) / 5) * 5;
+  const hi = Math.ceil(Math.max(...dias.map(d => d.tmax)) / 5) * 5 || lo + 5;
+  const span = Math.max(hi - lo, 5);
+  $("escalaTxt").textContent = `Regla de ${lo} a ${lo + span} °C · cada marca = 1 °C`;
+  const paso = 100 / span;   // % por grado
+  const ticks = `repeating-linear-gradient(90deg, var(--tick) 0 1px, transparent 1px ${paso}%) left 0 bottom 0 / 100% 6px no-repeat,` +
+                `repeating-linear-gradient(90deg, var(--tick) 0 1px, transparent 1px ${paso * 5}%) left 0 bottom 0 / calc(100% + 1px) 11px no-repeat`;
+  const cont = $("semana");
+  cont.replaceChildren();
+  dias.forEach((d, i) => {
+    const P = POSES[d.pose];
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "dia"; b.setAttribute("role", "listitem");
+    const izq = ((d.tmin - lo) / span) * 100, ancho = Math.max(((d.tmax - d.tmin) / span) * 100, 1.5);
+    const nombreDia = i === 0 ? "Hoy" : i === 1 ? "Mañana" : fmtDia.format(d.fecha);
+    b.innerHTML = `
+      <span class="fecha"><b></b><span></span></span>
+      <span class="mini"><img loading="lazy" width="64" height="64" alt=""></span>
+      <span class="cond"><b></b><span></span></span>
+      <span class="regla" aria-label="Mínima ${r0(d.tmin)} grados, máxima ${r0(d.tmax)} grados">
+        <span class="tmin">${r0(d.tmin)}°</span>
+        <span class="escala" style="--ticks:${ticks}"><span class="jaw" style="left:${izq}%;width:${ancho}%"></span></span>
+        <span class="tmax">${r0(d.tmax)}°</span>
+      </span>
+      <span class="lluvia${d.pprob >= 50 ? " alta" : ""}"><small>Lluvia</small>${r0(d.pprob)}%</span>
+      <span class="viento"><small>Viento</small>${r0(d.wind)} km/h</span>`;
+    b.querySelector(".fecha b").textContent = nombreDia;
+    b.querySelector(".fecha span").textContent = fmtFecha.format(d.fecha);
+    const im = b.querySelector(".mini img"); im.src = imgPose(d.pose); im.alt = `Pose: ${P.nombre}`;
+    b.querySelector(".cond b").textContent = WMO[d.code] ?? "—";
+    b.querySelector(".cond span").textContent = P.nombre;
+    b.addEventListener("click", () => { diaSel = i; pintarDetalle(); window.scrollTo({ top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); });
+    cont.append(b);
+  });
+}
+
+function pintarPoses() {
+  const usadas = new Set(estado ? estado.dias.map(d => d.pose) : []);
+  const cont = $("poses");
+  cont.replaceChildren();
+  for (let n = 1; n < POSES.length; n++) {
+    const P = POSES[n];
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "pose-item" + (usadas.has(n) ? " usada" : "");
+    b.innerHTML = `<span class="img"><img loading="lazy" width="240" height="240" alt=""></span><span><span class="n"></span><b></b><span></span></span>`;
+    b.querySelector("img").src = imgPose(n);
+    b.querySelector("img").alt = P.nombre;
+    b.querySelector(".n").textContent = `${String(n).padStart(2, "0")}${usadas.has(n) ? " · esta semana" : ""}`;
+    b.querySelector("b").textContent = P.nombre;
+    b.querySelector("b + span").textContent = P.cuando;
+    b.addEventListener("click", () => {
+      cambiarImg($("imgHoy"), imgPose(n), `Mascota: ${P.nombre}`);
+      $("poseHoy").textContent = `Pose ${n} · ${P.nombre} (vista previa)`;
+      $("msgHoy").textContent = `Aparece cuando: ${P.cuando.toLowerCase()}.`;
+      window.scrollTo({ top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    });
+    cont.append(b);
+  }
+}
+
+function mostrarAviso(html) { const a = $("aviso"); a.innerHTML = html; a.hidden = !html; }
+
+async function cargar(lugar) {
+  lugarActual = lugar;
+  $("lugar").textContent = lugar.nombre;
+  $("lugar").title = lugar.detalle || "";
+  $("fechaHoy").textContent = "Cargando…";
+  let j;
+  try {
+    j = await pedirPronostico(lugar);
+    mostrarAviso("");
+    try { localStorage.setItem("pronostico-lugar", JSON.stringify(lugar)); } catch (e) {}
+  } catch (e) {
+    j = ejemplo();
+    mostrarAviso(`<strong>Semana de ejemplo.</strong> No se pudo conectar con Open-Meteo desde esta vista, así que los datos de abajo son inventados para mostrar cómo funciona. ` +
+      `La versión con el pronóstico real está en <a href="https://sgeerling.github.io/mascota-epaper/pronostico.html" target="_blank" rel="noopener">sgeerling.github.io/mascota-epaper/pronostico.html</a>.`);
+    $("lugar").textContent = `${lugar.nombre} (ejemplo)`;
+  }
+  estado = normalizar(j);
+  diaSel = 0;
+  pintarSemana();
+  pintarDetalle();
+  pintarPoses();
+}
+
+// ---------- Búsqueda de ciudad ----------
+let resultados = [];
+async function buscarCiudad(q) {
+  const r = await fetch(`${GEO}?name=${encodeURIComponent(q)}&count=6&language=es&format=json`);
+  if (!r.ok) throw new Error("geo");
+  const j = await r.json();
+  return (j.results || []).map(x => ({
+    nombre: x.name, lat: x.latitude, lon: x.longitude,
+    detalle: [x.admin1, x.country].filter(Boolean).join(", "),
+  }));
+}
+function cerrarSugerencias() { $("sugerencias").hidden = true; }
+function mostrarSugerencias(lista) {
+  const ul = $("sugerencias");
+  ul.replaceChildren();
+  if (!lista.length) {
+    const li = document.createElement("li"); li.style.padding = "8px 10px"; li.style.color = "var(--muted)";
+    li.textContent = "No encontré esa ciudad. Prueba con otro nombre."; ul.append(li);
+  }
+  lista.forEach(l => {
+    const li = document.createElement("li"), b = document.createElement("button");
+    b.type = "button"; b.innerHTML = "<span></span> <small></small>";
+    b.querySelector("span").textContent = l.nombre; b.querySelector("small").textContent = l.detalle;
+    b.addEventListener("click", () => { cerrarSugerencias(); $("ciudad").value = ""; cargar(l); });
+    li.append(b); ul.append(li);
+  });
+  ul.hidden = false;
+}
+$("formBuscar").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const q = $("ciudad").value.trim();
+  if (q.length < 2) return;
+  try {
+    resultados = await buscarCiudad(q);
+    if (resultados.length === 1) { cerrarSugerencias(); $("ciudad").value = ""; cargar(resultados[0]); }
+    else mostrarSugerencias(resultados);
+  } catch (e) {
+    mostrarAviso("<strong>No se pudo buscar la ciudad.</strong> La búsqueda necesita conexión con Open-Meteo; revisa tu internet e inténtalo de nuevo.");
+  }
+});
+document.addEventListener("click", ev => { if (!ev.target.closest(".campo")) cerrarSugerencias(); });
+document.addEventListener("keydown", ev => { if (ev.key === "Escape") cerrarSugerencias(); });
+
+$("bUbicacion").addEventListener("click", () => {
+  if (!navigator.geolocation) { mostrarAviso("<strong>Este navegador no comparte la ubicación.</strong> Busca tu ciudad por nombre."); return; }
+  navigator.geolocation.getCurrentPosition(
+    p => cargar({ nombre: "Mi ubicación", detalle: "", lat: +p.coords.latitude.toFixed(3), lon: +p.coords.longitude.toFixed(3) }),
+    () => mostrarAviso("<strong>No se pudo obtener tu ubicación.</strong> Revisa el permiso de ubicación del navegador o busca tu ciudad por nombre."),
+    { timeout: 10000, maximumAge: 600000 });
+});
+
+// ---------- Arranque ----------
+let inicial = DEFECTO;
+try { const g = JSON.parse(localStorage.getItem("pronostico-lugar")); if (g && typeof g.lat === "number") inicial = g; } catch (e) {}
+pintarPoses();
+cargar(inicial);
+// Refresca el pronóstico cada 30 minutos si la página queda abierta
+setInterval(() => { if (estado && !estado.ejemplo) cargar(lugarActual); }, 30 * 60 * 1000);
+</script>

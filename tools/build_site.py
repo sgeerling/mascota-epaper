@@ -14,6 +14,7 @@ Requiere: git, g++ y Pillow (pip install pillow).
 """
 import argparse
 import json
+import re
 import os
 import shutil
 import subprocess
@@ -94,6 +95,21 @@ def main():
     (SITE / "index.html").write_text(html, encoding="utf-8")
     shutil.copy(RAIZ / "web/demo.js", SITE / "demo.js")
     (SITE / ".nojekyll").write_text("")
+
+    # Pronóstico del tiempo: la página usa las mismas poses. Revisa que sus nombres
+    # coincidan con poses.h y la envuelve en un documento HTML completo.
+    pron = (RAIZ / "web/pronostico.html").read_text(encoding="utf-8")
+    bloque = re.search(r"const POSES = \[(.*?)\n\];", pron, re.S)
+    en_pagina = re.findall(r'\{ nombre: "([^"]+)"', bloque.group(1) if bloque else "")
+    if en_pagina != nombres:
+        sys.exit("Los nombres de las poses en web/pronostico.html no coinciden con poses.h:\n"
+                 f"  poses.h:        {nombres}\n  pronostico.html: {en_pagina}")
+    (SITE / "pronostico.html").write_text(
+        '<!doctype html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n'
+        '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n'
+        "<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}"
+        "body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>\n"
+        "</head>\n<body>\n" + pron + "\n</body>\n</html>\n", encoding="utf-8")
 
     if args.readme:
         cols, m = 6, 4

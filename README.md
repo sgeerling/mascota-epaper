@@ -13,6 +13,19 @@ El repositorio genera automáticamente un sitio en **GitHub Pages** con la misma
 
 Cuando GitHub Pages esté activado, la demo queda en `https://<tu-usuario>.github.io/<nombre-del-repo>/`.
 
+## Pronóstico del tiempo
+
+`web/pronostico.html` es una página de pronóstico diario que usa las 24 poses. Cada día muestra la mascota con la pose que corresponde al clima: tormenta → ¡Alerta!, lluvia → Día lluvioso, calor extremo → Nervioso, niebla → Confundido, día perfecto → Enamorado, etc. La tarjeta de hoy muestra *Durmiendo* de noche y *Saludando* en la mañana.
+
+- Datos de [Open-Meteo](https://open-meteo.com/): gratis y sin clave. Muestra hoy y los próximos 6 días.
+- Buscador de ciudad y botón **Mi ubicación**. La última ciudad queda guardada en el navegador.
+- La temperatura mínima y máxima de cada día se dibuja como una regla de pie de metro sobre la escala de la semana.
+- Al final está la leyenda de las 24 poses con la condición que activa cada una.
+
+Las reglas están en la función `poseDelDia()` de la página. Se revisan en orden y gana la primera que se cumple, de lo más importante a lo más tranquilo. `tools/build_site.py` publica la página en `site/pronostico.html` y revisa que los nombres de las poses coincidan con `poses.h`.
+
+Con GitHub Pages activado queda en `https://<tu-usuario>.github.io/<nombre-del-repo>/pronostico.html`.
+
 ## Qué hace
 
 - **24 poses**: normal, saludando, guiño, midiendo, sorpresa, durmiendo, enamorado, enojado, triste, confundido, cantando, celebrando, nervioso, ¡idea!, con onda, mareado, midiendo una tuerca, ¡alerta!, pausa para café, día soleado, día lluvioso, arcoíris…
@@ -60,6 +73,7 @@ firmware/mascota_e6/   Sketch de Arduino para el ESP32
   pagina.h             Interfaz web (generada desde web/pagina.html)
 web/
   pagina.html          Interfaz de control (fuente)
+  pronostico.html      Pronóstico del tiempo con las 24 poses
   demo.js              Simulación de la API para el sitio de GitHub Pages
 tools/
   generar_pagina.py    web/pagina.html -> firmware/mascota_e6/pagina.h
